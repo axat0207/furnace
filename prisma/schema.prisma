@@ -1,0 +1,111 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  startDate DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  settings      Settings?
+  dailyLogs     DailyLog[]
+  habits        Habit[]
+  learningItems LearningItem[]
+  problems      Problem[]
+  notes         Note[]
+  practiceLog   PracticeEntry[]
+}
+
+model Settings {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  minimalMode Boolean @default(false)
+  theme       String  @default("dark")
+}
+
+model DailyLog {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date            String   // YYYY-MM-DD format
+  focusItems      String[] // Array of focus items
+  habitsCompleted String[] // Array of habit IDs
+  mood            Int?
+  notes           String?
+  detoxLog        Json?    // Array of {trigger, response, outcome}
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model Habit {
+  id                    String  @id @default(cuid())
+  userId                String
+  user                  User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habitId               String  // e.g., "gym", "fog_habit"
+  label                 String
+  category              String  // physical, mental, detox
+  requiredInMinimalMode Boolean @default(false)
+
+  @@unique([userId, habitId])
+  @@index([userId])
+}
+
+model LearningItem {
+  id               String  @id @default(cuid())
+  userId           String
+  user             User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic            String
+  status           String  @default("not_started") // not_started, in_progress, internalized
+  explanation      String?
+  realWorldMapping String?
+
+  @@index([userId])
+}
+
+model Problem {
+  id          String  @id @default(cuid())
+  userId      String
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  type        String  // dsa, debugging, real_world
+  difficulty  String  // easy, medium, hard
+  solved      Boolean @default(false)
+  explanation String?
+
+  @@index([userId])
+}
+
+model Note {
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category String // office, casual, relationship
+  content  String
+
+  @@index([userId])
+}
+
+model PracticeEntry {
+  id      String   @id @default(cuid())
+  userId  String
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date    DateTime @default(now())
+  type    String   // written, verbal
+  content String?
+
+  @@index([userId])
+}
