@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
             // Create default user
             user = await prisma.user.create({
                 data: {
+                    username: 'developer', // Default username
                     name: 'Developer',
                     settings: {
                         create: {

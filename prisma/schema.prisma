@@ -11,8 +11,10 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String
+  id String @id @default(cuid())
+
+  username  String   @unique
+  name      String? // Make name optional if we only ask for username
   startDate DateTime @default(now())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -24,6 +26,12 @@ model User {
   problems      Problem[]
   notes         Note[]
   practiceLog   PracticeEntry[]
+
+  // Money Manager
+  transactions    Transaction[]
+  categories      Category[]
+  paidExpenses    SharedExpense[] @relation("PaidExpenses")
+  expenseSplits   ExpenseSplit[]  @relation("ExpenseSplits")
 }
 
 model Settings {
@@ -38,12 +46,12 @@ model DailyLog {
   id              String   @id @default(cuid())
   userId          String
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date            String   // YYYY-MM-DD format
+  date            String // YYYY-MM-DD format
   focusItems      String[] // Array of focus items
   habitsCompleted String[] // Array of habit IDs
   mood            Int?
   notes           String?
-  detoxLog        Json?    // Array of {trigger, response, outcome}
+  detoxLog        Json? // Array of {trigger, response, outcome}
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -55,9 +63,9 @@ model Habit {
   id                    String  @id @default(cuid())
   userId                String
   user                  User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  habitId               String  // e.g., "gym", "fog_habit"
+  habitId               String // e.g., "gym", "fog_habit"
   label                 String
-  category              String  // physical, mental, detox
+  category              String // physical, mental, detox
   requiredInMinimalMode Boolean @default(false)
 
   @@unique([userId, habitId])
@@ -81,8 +89,8 @@ model Problem {
   userId      String
   user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   name        String
-  type        String  // dsa, debugging, real_world
-  difficulty  String  // easy, medium, hard
+  type        String // dsa, debugging, real_world
+  difficulty  String // easy, medium, hard
   solved      Boolean @default(false)
   explanation String?
 
@@ -104,8 +112,87 @@ model PracticeEntry {
   userId  String
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   date    DateTime @default(now())
-  type    String   // written, verbal
+  type    String // written, verbal
   content String?
 
   @@index([userId])
+}
+
+// Money Manager Models
+
+model Transaction {
+  id          String   @id @default(cuid())
+  amount      Float
+  type        String // INCOME, EXPENSE
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  date        DateTime @default(now())
+  description String?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId, date])
+}
+
+model Category {
+  id           String        @id @default(cuid())
+  name         String
+  type         String // INCOME, EXPENSE
+  icon         String? // Optional icon identifier
+  color        String? // Optional color hex
+  isDefault    Boolean       @default(false)
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@unique([userId, name, type])
+  @@index([userId])
+}
+
+// Shared Expenses (Splitwise-like)
+model SharedExpense {
+  id          String   @id @default(cuid())
+  description String
+  totalAmount Float
+  currency    String   @default("INR")
+  date        DateTime @default(now())
+  category    String?  // e.g., "Food", "Travel", "Rent"
+  
+  // Who paid the full amount
+  paidByUserId String
+  paidBy       User     @relation("PaidExpenses", fields: [paidByUserId], references: [id], onDelete: Cascade)
+  
+  // Participants and their shares
+  splits      ExpenseSplit[]
+  
+  isSettled   Boolean  @default(false)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([paidByUserId])
+  @@index([date])
+}
+
+// Individual split for each participant in a shared expense
+model ExpenseSplit {
+  id        String   @id @default(cuid())
+  
+  expenseId String
+  expense   SharedExpense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  
+  userId    String
+  user      User     @relation("ExpenseSplits", fields: [userId], references: [id], onDelete: Cascade)
+  
+  shareAmount Float  // How much this user owes
+  isPaid      Boolean @default(false)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([expenseId, userId])
+  @@index([userId])
+  @@index([expenseId])
 }

@@ -7,17 +7,18 @@ import { useApp } from '@/context/AppContext';
 import { calculateStats } from '@/lib/gamification';
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { logout } from '@/app/login/actions';
 
 const NAV_ITEMS = [
     { icon: Home, label: 'Bridge', href: '/' },
     { icon: CheckSquare, label: 'Habits', href: '/habits' },
     { icon: MessageSquare, label: 'Communication', href: '/communication' },
     { icon: BookOpen, label: 'Learning', href: '/learning' },
+    { icon: Wallet, label: 'Money', href: '/money' },
     { icon: ClipboardList, label: 'Review', href: '/review' },
 ];
 
 const COMING_SOON = [
-    { icon: Wallet, label: 'Money' },
     { icon: Languages, label: 'Vocabulary' },
 ];
 
@@ -119,6 +120,17 @@ export function Sidebar() {
                         </span>
                     </div>
                 </button>
+
+                {/* Logout Button */}
+                <form action={logout}>
+                    <button
+                        type="submit"
+                        className="group flex items-center gap-3 p-3 rounded-lg transition-colors w-full border border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-red-400"
+                    >
+                        <Lock size={20} className="group-hover:text-red-400" />
+                        <span className="hidden md:block text-sm font-medium">Disconnect</span>
+                    </button>
+                </form>
 
                 <div className="text-[10px] text-[var(--text-muted)] text-center md:text-left mt-2 px-2 hidden md:block font-mono">
                     DAY {Object.keys(state.dailyLogs).length + 1} / 90
