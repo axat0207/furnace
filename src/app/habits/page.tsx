@@ -16,9 +16,9 @@ export default function HabitsPage() {
     const [newHabitLabel, setNewHabitLabel] = useState('');
     const [newHabitCategory, setNewHabitCategory] = useState<'physical' | 'mental'>('physical');
 
-    // 14 Days History
+    // 30 Days History (more robust tracking)
     const dates: string[] = [];
-    for (let i = 13; i >= 0; i--) {
+    for (let i = 29; i >= 0; i--) {
         const d = new Date();
         d.setDate(d.getDate() - i);
         dates.push(d.toISOString().split('T')[0]);
@@ -204,15 +204,23 @@ export default function HabitsPage() {
                             {/* Heatmap Grid */}
                             <div className="w-full">
                                 <div className="flex justify-between items-end mb-2">
-                                    <span className="text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-wider">Target Acquisition (14 Days)</span>
+                                    <span className="text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-wider">Activity Heatmap (30 Days)</span>
+                                    <div className="text-[10px] font-mono text-[var(--text-muted)]">
+                                        {stats.totalCompletions} total • {Math.round((stats.totalCompletions / 30) * 100)}% avg
+                                    </div>
                                 </div>
                                 <div className="flex gap-1.5 md:gap-2 justify-between">
                                     {dates.map((date) => {
                                         const status = getStatus(date, habit.id);
                                         const isToday = date === new Date().toISOString().split('T')[0];
+                                        const yesterday = new Date();
+                                        yesterday.setDate(yesterday.getDate() - 1);
+                                        const yesterdayStr = yesterday.toISOString().split('T')[0];
+                                        const isYesterday = date === yesterdayStr;
 
                                         const handleToggle = async () => {
-                                            if (!isToday) return; // Only allow marking today
+                                            // Allow marking today and yesterday (for catch-up)
+                                            if (!isToday && !isYesterday) return; // Only allow today or yesterday
 
                                             const currentLog = state.dailyLogs[date] || { habitsCompleted: [] };
                                             const completed = currentLog.habitsCompleted || [];
@@ -234,7 +242,9 @@ export default function HabitsPage() {
                                                 onClick={handleToggle}
                                                 className={clsx(
                                                     "flex-1 flex flex-col items-center gap-1 group/day relative",
-                                                    isToday ? "cursor-pointer" : "cursor-not-allowed opacity-80"
+                                                    (isToday || isYesterday) 
+                                                        ? "cursor-pointer" 
+                                                        : "cursor-not-allowed opacity-60"
                                                 )}
                                             >
                                                 <div
@@ -245,20 +255,23 @@ export default function HabitsPage() {
                                                             : status === 'miss' && !isToday
                                                                 ? "bg-red-500/20 border-red-500/50"
                                                                 : "bg-[var(--bg-primary)] border-[var(--border)]",
-                                                        isToday && "hover:border-[var(--neon-blue)]"
+                                                        (isToday || isYesterday) 
+                                                            && "hover:border-[var(--neon-blue)]"
                                                     )}
-                                                    title={isToday ? "Click to toggle" : date}
+                                                    title={isToday ? "Click to toggle (Today)" : isYesterday ? "Click to toggle (Yesterday)" : date}
                                                 >
                                                     {status === 'done' && (
                                                         <CheckCircle2 size={12} className="text-[var(--bg-primary)] md:scale-125 font-bold" />
                                                     )}
-                                                    {isToday && status !== 'done' && (
+                                                    {(isToday || isYesterday) && status !== 'done' && (
                                                         <div className="w-1.5 h-1.5 rounded-full bg-[var(--text-muted)] opacity-50" />
                                                     )}
                                                 </div>
                                                 <span className={clsx(
                                                     "text-[8px] md:text-[9px] font-mono hidden md:block",
-                                                    isToday ? "text-[var(--neon-blue)] font-bold" : "text-[var(--text-muted)] opacity-50"
+                                                    (isToday || isYesterday) 
+                                                        ? "text-[var(--neon-blue)] font-bold" 
+                                                        : "text-[var(--text-muted)] opacity-50"
                                                 )}>
                                                     {date.slice(8)}
                                                 </span>

@@ -1,29 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getUser } from '@/lib/auth';
 
-// GET /api/user - Get or create user
+// GET /api/user - Get authenticated user
 export async function GET(request: NextRequest) {
     try {
-        // For now, we'll use a single user. In production, you'd use auth.
-        let user = await prisma.user.findFirst();
+        const sessionUser = await getUser();
+        
+        if (!sessionUser) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { id: sessionUser.id },
+            include: {
+                settings: true,
+            },
+        });
 
         if (!user) {
-            // Create default user
-            user = await prisma.user.create({
-                data: {
-                    username: 'developer', // Default username
-                    name: 'Developer',
-                    settings: {
-                        create: {
-                            minimalMode: false,
-                            theme: 'dark',
-                        },
-                    },
-                },
-                include: {
-                    settings: true,
-                },
-            });
+            return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
         return NextResponse.json(user);
@@ -36,10 +32,19 @@ export async function GET(request: NextRequest) {
 // PUT /api/user - Update user settings
 export async function PUT(request: NextRequest) {
     try {
+        const sessionUser = await getUser();
+        
+        if (!sessionUser) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const body = await request.json();
         const { minimalMode, theme } = body;
 
-        const user = await prisma.user.findFirst();
+        const user = await prisma.user.findUnique({
+            where: { id: sessionUser.id },
+        });
+
         if (!user) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }

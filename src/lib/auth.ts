@@ -34,3 +34,7 @@ export async function getUser() {
     const session = await getSession();
     return session?.user;
 }
+
+export function isAdmin(user: { username: string } | null | undefined): boolean {
+    return user?.username === 'akshat';
+}

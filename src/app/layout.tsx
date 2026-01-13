@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AppProvider } from "@/context/AppContext";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { ConditionalLayout } from "@/components/layout/ConditionalLayout";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,14 +21,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <AppProvider>
-          <div className="flex min-h-screen">
-            <Sidebar />
-            <main className="flex-1 ml-16 md:ml-72 transition-all duration-300 p-8 overflow-y-auto h-screen">
-              <div className="max-w-4xl mx-auto">
-                {children}
-              </div>
-            </main>
-          </div>
+          <ConditionalLayout>
+            {children}
+          </ConditionalLayout>
         </AppProvider>
       </body>
     </html>

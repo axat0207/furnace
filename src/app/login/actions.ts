@@ -25,7 +25,12 @@ export async function login(formData: FormData) {
     const expires = new Date(Date.now() + 31536000 * 1000); // 1 year
     const session = await encrypt({ user: { id: user.id, username: user.username }, expires });
 
-    (await cookies()).set('session', session, { expires, httpOnly: true });
+    (await cookies()).set('session', session, { 
+        expires, 
+        httpOnly: true,
+        path: '/',
+        sameSite: 'lax',
+    });
 
     redirect('/');
 }
@@ -81,12 +86,27 @@ export async function signup(formData: FormData) {
     const expires = new Date(Date.now() + 31536000 * 1000); // 1 year
     const session = await encrypt({ user: { id: user.id, username: user.username }, expires });
 
-    (await cookies()).set('session', session, { expires, httpOnly: true });
+    (await cookies()).set('session', session, { 
+        expires, 
+        httpOnly: true,
+        path: '/',
+        sameSite: 'lax',
+    });
 
     redirect('/');
 }
 
 export async function logout() {
-    (await cookies()).delete('session');
+    const cookieStore = await cookies();
+    // Delete the session cookie by setting it to expired with same options it was set with
+    cookieStore.delete('session');
+    // Also set it to empty with expired date to ensure deletion across all browsers
+    cookieStore.set('session', '', {
+        expires: new Date(0), // Set to past date to delete
+        httpOnly: true,
+        path: '/',
+        sameSite: 'lax',
+        maxAge: 0, // Also set maxAge to 0 to ensure deletion
+    });
     redirect('/login');
 }

@@ -70,14 +70,58 @@ export async function addCategory(formData: FormData) {
 
     if (!name) throw new Error("Name required");
 
+    // Check if category already exists for this user and type
+    const existing = await prisma.category.findFirst({
+        where: {
+            userId: user.id,
+            name: name.trim(),
+            type: type
+        }
+    });
+
+    if (existing) {
+        throw new Error("Category already exists");
+    }
+
     await prisma.category.create({
         data: {
-            name,
+            name: name.trim(),
             type,
-            icon,
+            icon: icon || 'tag',
             userId: user.id
         }
     });
 
     revalidatePath('/money');
+    revalidatePath('/money/splits');
+}
+
+export async function deleteCategory(categoryId: string) {
+    const user = await getUser();
+    if (!user) throw new Error("Unauthorized");
+
+    // Check if category belongs to user and is not default
+    const category = await prisma.category.findFirst({
+        where: {
+            id: categoryId,
+            userId: user.id
+        }
+    });
+
+    if (!category) {
+        throw new Error("Category not found");
+    }
+
+    if (category.isDefault) {
+        throw new Error("Cannot delete default category");
+    }
+
+    await prisma.category.delete({
+        where: {
+            id: categoryId
+        }
+    });
+
+    revalidatePath('/money');
+    revalidatePath('/money/splits');
 }

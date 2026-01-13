@@ -1,15 +1,38 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { FocusBoard } from '@/components/dashboard/FocusBoard';
 import { NonNegotiables } from '@/components/dashboard/NonNegotiables';
 import { ProgressRing } from '@/components/dashboard/ProgressRing';
 import { DetoxLogger } from '@/components/dashboard/DetoxLogger';
+import { LiveMetrics } from '@/components/dashboard/LiveMetrics';
 import { useApp } from '@/context/AppContext';
 import { calculateStats } from '@/lib/gamification';
 import { motion } from 'framer-motion';
 
 export default function Home() {
+  const router = useRouter();
+  
+  // Verify authentication on client side as well - redirect immediately if not authenticated
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const res = await fetch('/api/user', { 
+          credentials: 'include', // Ensure cookies are sent
+          cache: 'no-store' // Don't cache the auth check
+        });
+        if (!res.ok || res.status === 401) {
+          router.replace('/login');
+          return;
+        }
+      } catch (error) {
+        router.replace('/login');
+        return;
+      }
+    }
+    checkAuth();
+  }, [router]);
   const { state } = useApp();
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   const { levelInfo } = useMemo(() => calculateStats(state), [state]);
@@ -62,39 +85,7 @@ export default function Home() {
         {/* Right Column - Status (1/3 width) */}
         <div className="flex flex-col gap-6">
           <ProgressRing />
-
-          {/* Motivation/Stats Card */}
-          <motion.div
-            className="glass-panel p-6"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-          >
-            <h3 className="text-xs font-bold text-[var(--text-muted)] uppercase mb-4">Live Metrics</h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-[var(--text-secondary)]">Current Streak</span>
-                <span className="font-mono text-[var(--neon-purple)] font-bold">
-                  {/* Logic to get streaks from each habit? Or just global max? */}
-                  Active
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-[var(--text-secondary)]">XP Gained Today</span>
-                <span className="font-mono text-[var(--neon-blue)] font-bold">Isocalcing...</span>
-              </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-[var(--text-secondary)]">Systems Check</span>
-                <span className="text-[var(--neon-green)] font-bold">OK</span>
-              </div>
-            </div>
-
-            <div className="mt-6 pt-6 border-t border-[var(--border)]">
-              <p className="text-xs text-[var(--text-muted)] italic text-center">
-                "We do not rise to the level of our goals. We fall to the level of our systems."
-              </p>
-            </div>
-          </motion.div>
+          <LiveMetrics />
         </div>
       </div>
     </div>

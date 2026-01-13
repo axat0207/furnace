@@ -6,6 +6,7 @@ import { Category } from '@prisma/client';
 import { Plus, Users, Zap, Tag, X, ChevronDown, Check, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { CategoryManager } from './CategoryManager';
 
 interface UserOption {
     id: string;
@@ -13,12 +14,13 @@ interface UserOption {
 }
 
 export default function QuickSplit({
-    categories,
+    categories: initialCategories,
     allUsers
 }: {
     categories: Category[];
     allUsers: UserOption[]
 }) {
+    const [categories, setCategories] = useState(initialCategories);
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -98,13 +100,13 @@ export default function QuickSplit({
     }
 
     return (
-        <div className="w-full glass-card overflow-hidden glow-effect mb-8">
-            <div className="p-6">
-                <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="w-full glass-card overflow-hidden glow-effect mb-4 md:mb-8">
+            <div className="p-4 md:p-6">
+                <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
                     {/* Step 1: Amount */}
                     <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <span className="text-[var(--neon-gold)] text-2xl font-bold">₹</span>
+                        <div className="absolute inset-y-0 left-0 pl-3 md:pl-4 flex items-center pointer-events-none">
+                            <span className="text-[var(--neon-gold)] text-xl md:text-2xl font-bold">₹</span>
                         </div>
                         <input
                             type="number"
@@ -112,8 +114,9 @@ export default function QuickSplit({
                             value={amount}
                             onChange={(e) => setAmount(e.target.value)}
                             placeholder="0.00"
-                            className="w-full bg-[var(--bg-secondary)] text-5xl font-bold text-white placeholder-[var(--text-muted)] pl-12 pr-4 py-4 rounded-xl border border-[var(--border)] focus:outline-none focus:border-[var(--neon-gold)] focus:ring-2 focus:ring-[var(--neon-gold)]/20 transition-all"
+                            className="w-full bg-[var(--bg-secondary)] text-3xl md:text-5xl font-bold text-white placeholder-[var(--text-muted)] pl-10 md:pl-12 pr-3 md:pr-4 py-3 md:py-4 rounded-xl border border-[var(--border)] focus:outline-none focus:border-[var(--neon-gold)] focus:ring-2 focus:ring-[var(--neon-gold)]/20 transition-all"
                             required
+                            inputMode="decimal"
                         />
                     </div>
 
@@ -127,24 +130,47 @@ export default function QuickSplit({
                             >
                                 {/* Step 2: Categories (Now visible after amount) */}
                                 <div>
-                                    <label className="text-xs font-bold text-[var(--neon-cyan)] uppercase tracking-wider mb-3 block">
-                                        Category
-                                    </label>
-                                    <div className="grid grid-cols-4 gap-2">
+                                    <div className="flex items-center justify-between mb-2 md:mb-3">
+                                        <label className="text-[10px] md:text-xs font-bold text-[var(--neon-cyan)] uppercase tracking-wider">
+                                            Category
+                                        </label>
+                                        <CategoryManager
+                                            categories={categories}
+                                            type="EXPENSE"
+                                            onCategoryAdded={async () => {
+                                                const response = await fetch('/api/money/categories', { cache: 'no-store' });
+                                                if (response.ok) {
+                                                    const updatedCategories = await response.json();
+                                                    setCategories(updatedCategories);
+                                                }
+                                            }}
+                                            onCategoryDeleted={async () => {
+                                                const response = await fetch('/api/money/categories', { cache: 'no-store' });
+                                                if (response.ok) {
+                                                    const updatedCategories = await response.json();
+                                                    setCategories(updatedCategories);
+                                                    if (selectedCategory && !updatedCategories.find((c: Category) => c.id === selectedCategory.id)) {
+                                                        setSelectedCategory(null);
+                                                    }
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-5 md:grid-cols-4 gap-1.5 md:gap-2">
                                         {categories.filter(c => c.type === 'EXPENSE').map(cat => (
                                             <button
                                                 key={cat.id}
                                                 type="button"
                                                 onClick={() => setSelectedCategory(cat)}
                                                 className={cn(
-                                                    "p-3 rounded-xl border text-xs font-medium transition-all duration-200 flex flex-col items-center justify-center gap-1 h-20",
+                                                    "p-2 md:p-3 rounded-lg md:rounded-xl border text-[10px] md:text-xs font-medium transition-all duration-200 flex flex-col items-center justify-center gap-1 h-16 md:h-20 active:scale-95 md:hover:scale-105 touch-manipulation",
                                                     selectedCategory?.id === cat.id
                                                         ? "bg-gradient-to-br from-[var(--neon-purple)] to-[var(--neon-blue)] text-white border-transparent shadow-lg shadow-purple-500/50"
                                                         : "bg-[var(--bg-secondary)] border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--neon-purple)]"
                                                 )}
                                             >
-                                                <Tag size={16} />
-                                                <span className="truncate w-full text-center">{cat.name}</span>
+                                                <Tag size={12} className="md:w-4 md:h-4" />
+                                                <span className="truncate w-full text-center leading-tight">{cat.name}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -152,24 +178,24 @@ export default function QuickSplit({
 
                                 {/* Step 3: Participants Dropdown */}
                                 <div className="relative" ref={dropdownRef}>
-                                    <label className="text-xs font-bold text-[var(--neon-purple)] uppercase tracking-wider mb-3 block">
+                                    <label className="text-[10px] md:text-xs font-bold text-[var(--neon-purple)] uppercase tracking-wider mb-2 md:mb-3 block">
                                         Split With
                                     </label>
 
-                                    <div className="flex flex-wrap gap-2 mb-3">
+                                    <div className="flex flex-wrap gap-1.5 md:gap-2 mb-2 md:mb-3">
                                         {participants.map(p => (
-                                            <span key={p} className="flex items-center gap-1 px-3 py-1 bg-[var(--neon-purple)]/20 text-[var(--neon-purple)] rounded-full text-sm font-bold border border-[var(--neon-purple)]/30 group">
-                                                {p}
-                                                <button type="button" onClick={() => toggleParticipant(p)} className="hover:text-white transition-colors">
-                                                    <X size={14} />
+                                            <span key={p} className="flex items-center gap-1 px-2 md:px-3 py-1 bg-[var(--neon-purple)]/20 text-[var(--neon-purple)] rounded-full text-xs md:text-sm font-bold border border-[var(--neon-purple)]/30 group">
+                                                <span className="truncate max-w-[80px] md:max-w-none">{p}</span>
+                                                <button type="button" onClick={() => toggleParticipant(p)} className="hover:text-white transition-colors flex-shrink-0">
+                                                    <X size={12} className="md:w-[14px] md:h-[14px]" />
                                                 </button>
                                             </span>
                                         ))}
                                     </div>
 
                                     <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                            <Users size={18} className="text-[var(--text-muted)]" />
+                                        <div className="absolute inset-y-0 left-0 pl-3 md:pl-4 flex items-center pointer-events-none">
+                                            <Users size={16} className="md:w-[18px] md:h-[18px] text-[var(--text-muted)]" />
                                         </div>
                                         <input
                                             value={userInput}
@@ -180,9 +206,9 @@ export default function QuickSplit({
                                             }}
                                             onFocus={() => setShowUserDropdown(true)}
                                             placeholder="Type or select users..."
-                                            className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl pl-12 pr-4 py-3 text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--neon-purple)] transition-all"
+                                            className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl pl-10 md:pl-12 pr-3 md:pr-4 py-2.5 md:py-3 text-sm md:text-base text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--neon-purple)] transition-all"
                                         />
-                                        <ChevronDown className="absolute right-4 top-3 text-[var(--text-muted)]" size={18} />
+                                        <ChevronDown className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={16} />
                                     </div>
 
                                     <AnimatePresence>
@@ -213,7 +239,7 @@ export default function QuickSplit({
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
                                     placeholder="What's this for? (optional)"
-                                    className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl px-4 py-3 text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--neon-purple)]"
+                                    className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--neon-purple)]"
                                 />
 
                                 <AnimatePresence>
@@ -233,23 +259,23 @@ export default function QuickSplit({
                                     type="submit"
                                     disabled={!selectedCategory || !amount || participants.length === 0 || isSubmitting}
                                     className={cn(
-                                        "w-full font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 overflow-hidden relative",
+                                        "w-full font-bold py-3 md:py-4 rounded-xl transition-all flex items-center justify-center gap-2 overflow-hidden relative text-sm md:text-base touch-manipulation",
                                         success
                                             ? "bg-green-500 text-white"
-                                            : "bg-gradient-to-r from-[var(--neon-gold)] to-[var(--neon-purple)] text-white hover:shadow-lg hover:shadow-gold-500/20 hover:scale-[1.02] active:scale-[0.98]"
+                                            : "bg-gradient-to-r from-[var(--neon-gold)] to-[var(--neon-purple)] text-white hover:shadow-lg hover:shadow-gold-500/20 active:scale-[0.98] md:hover:scale-[1.02]"
                                     )}
                                 >
                                     {isSubmitting ? (
                                         <>Processing...</>
                                     ) : success ? (
                                         <>
-                                            <Check size={18} />
-                                            Split Successfully Created!
+                                            <Check size={16} className="md:w-[18px] md:h-[18px]" />
+                                            <span>Split Created!</span>
                                         </>
                                     ) : (
                                         <>
-                                            <Zap size={18} />
-                                            Split with {participants.length} {participants.length === 1 ? 'person' : 'people'}
+                                            <Zap size={16} className="md:w-[18px] md:h-[18px]" />
+                                            <span>Split with {participants.length} {participants.length === 1 ? 'person' : 'people'}</span>
                                         </>
                                     )}
                                 </button>
