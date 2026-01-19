@@ -111,9 +111,10 @@ export default function QuickAdd({ categories: initialCategories }: { categories
                             value={amount}
                             onChange={(e) => setAmount(e.target.value)}
                             placeholder="0.00"
-                            className="w-full bg-[var(--bg-secondary)] text-3xl md:text-5xl font-bold text-white placeholder-[var(--text-muted)] pl-10 md:pl-12 pr-3 md:pr-4 py-3 md:py-4 rounded-xl border border-[var(--border)] focus:outline-none focus:border-[var(--neon-purple)] focus:ring-2 focus:ring-[var(--neon-purple)]/20 transition-all"
+                            className="w-full bg-[var(--bg-secondary)] text-3xl md:text-5xl font-bold text-white placeholder-[var(--text-muted)] pl-10 md:pl-12 pr-3 md:pr-4 py-3 md:py-4 rounded-xl border border-[var(--border)] focus:outline-none focus:border-[var(--neon-purple)] focus:ring-2 focus:ring-[var(--neon-purple)]/20 transition-all no-spinner"
                             required
                             inputMode="decimal"
+                            autoFocus
                         />
                     </div>
 

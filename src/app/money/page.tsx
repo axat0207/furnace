@@ -1,91 +1,64 @@
-'use client';
 
-import { useMemo, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { FocusBoard } from '@/components/dashboard/FocusBoard';
-import { NonNegotiables } from '@/components/dashboard/NonNegotiables';
-import { ProgressRing } from '@/components/dashboard/ProgressRing';
-import { DetoxLogger } from '@/components/dashboard/DetoxLogger';
-import { LiveMetrics } from '@/components/dashboard/LiveMetrics';
-import { useApp } from '@/context/AppContext';
-import { calculateStats } from '@/lib/gamification';
-import { motion } from 'framer-motion';
+import Link from 'next/link';
+import { ArrowLeft, Split, PieChart } from 'lucide-react';
+import QuickAdd from '@/components/money/QuickAdd';
+import TransactionList from '@/components/money/TransactionList';
+import { getCategories, getTransactions } from './actions';
 
-export default function Home() {
-  const router = useRouter();
-  
-  // Verify authentication on client side as well - redirect immediately if not authenticated
-  useEffect(() => {
-    async function checkAuth() {
-      try {
-        const res = await fetch('/api/user', { 
-          credentials: 'include', // Ensure cookies are sent
-          cache: 'no-store' // Don't cache the auth check
-        });
-        if (!res.ok || res.status === 401) {
-          router.replace('/login');
-          return;
-        }
-      } catch (error) {
-        router.replace('/login');
-        return;
-      }
-    }
-    checkAuth();
-  }, [router]);
-  const { state } = useApp();
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-  const { levelInfo } = useMemo(() => calculateStats(state), [state]);
-
-  const greetings = [
-    "Ready to ship, Developer?",
-    "Systems online.",
-    "Build the future.",
-    "Focus is the key.",
-    "Discipline equals freedom."
-  ];
-
-  // Random greeting based on day
-  const greeting = greetings[new Date().getDate() % greetings.length];
+export default async function MoneyPage() {
+  const categories = await getCategories();
+  const transactions = await getTransactions(10);
 
   return (
-    <div className="space-y-6 pb-20 md:pb-0">
-      {/* Header */}
-      <motion.div
-        className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <div>
-          <h1 className="text-3xl md:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[var(--text-primary)] to-[var(--text-secondary)] neon-text">
-            Command Center
-          </h1>
-          <p className="text-[var(--text-secondary)] font-mono mt-2 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[var(--neon-green)] animate-pulse" />
-            {today}
-          </p>
+    <div className="min-h-screen p-6 md:p-12 pb-32 space-y-8 relative max-w-7xl mx-auto">
+      {/* Minimal Nav Bar */}
+      <div className="flex items-center justify-between pointer-events-auto">
+        <Link href="/" className="p-3 bg-white/5  hover:bg-white/10 rounded-2xl transition-all group border border-white/5 hover:border-white/10">
+          <ArrowLeft size={20} className="text-zinc-400 group-hover:text-white group-hover:-translate-x-0.5 transition-transform" />
+        </Link>
+
+        <div className="flex gap-3">
+          <Link href="/money/splits" className="flex items-center gap-3 px-4 py-3 bg-[#111] hover:bg-[#161616] rounded-2xl border border-white/5 transition-all group">
+            <Split size={18} className="text-teal-500" />
+            <span className="text-sm font-medium text-zinc-400 group-hover:text-zinc-200 hidden md:block">Splitwise</span>
+          </Link>
+          <Link href="/money/analytics" className="p-3 bg-[#111] hover:bg-[#161616] rounded-2xl border border-white/5 transition-all text-zinc-400 hover:text-white">
+            <PieChart size={20} />
+          </Link>
+        </div>
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-start mt-8">
+
+        {/* Left: Input Island (Sticky on desktop) */}
+        <div className="lg:col-span-5 lg:sticky lg:top-8">
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-4xl font-black text-white mb-2 tracking-tight">Add Transaction</h1>
+              <p className="text-zinc-500 font-medium">Log expenses instantly.</p>
+            </div>
+            <div className="transform transition-all shadow-2xl shadow-black/40 rounded-3xl overflow-hidden border border-white/5 ring-1 ring-white/5 backdrop-blur-xl bg-black/40">
+              <QuickAdd categories={categories} />
+            </div>
+          </div>
         </div>
 
-        <div className="text-right hidden md:block">
-          <p className="text-sm font-bold text-[var(--neon-blue)]">{greeting}</p>
-          <p className="text-xs text-[var(--text-muted)] font-mono">Current Rank: {levelInfo.title}</p>
-        </div>
-      </motion.div>
+        {/* Right: History Feed */}
+        <div className="lg:col-span-7 space-y-8">
+          <div className="flex items-end justify-between border-b border-white/5 pb-4">
+            <div>
+              <h2 className="text-xl font-bold text-white">History</h2>
+              <p className="text-xs text-zinc-500 mt-1">Your recent financial activity</p>
+            </div>
+            <Link href="/money/history" className="text-xs font-bold text-furnace-primary hover:text-white transition-colors">
+              VIEW FULL HISTORY
+            </Link>
+          </div>
 
-      {/* Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* Left Column - Actionable (2/3 width) */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          <FocusBoard />
-          <NonNegotiables />
-          <DetoxLogger />
-        </div>
-
-        {/* Right Column - Status (1/3 width) */}
-        <div className="flex flex-col gap-6">
-          <ProgressRing />
-          <LiveMetrics />
+          <div className="space-y-4">
+            <TransactionList transactions={transactions} />
+          </div>
         </div>
       </div>
     </div>

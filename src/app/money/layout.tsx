@@ -5,7 +5,7 @@ export default function MoneyLayout({
     children: React.ReactNode;
 }) {
     return (
-        <div className="min-h-screen bg-background">
+        <div>
             {children}
         </div>
     );

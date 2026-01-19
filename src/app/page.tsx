@@ -1,10 +1,37 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import { HabitGrid } from "@/components/furnace/HabitGrid";
 import { BrainDump } from "@/components/furnace/BrainDump";
 import { AICoach } from "@/components/furnace/AICoach";
-import { Brain, MessageSquare } from "lucide-react";
+import { Brain, MessageSquare, TrendingUp, Flame, Target } from "lucide-react";
 import Link from "next/link";
+import { getTodayHabits, getStreaks } from '@/app/furnace-actions';
+import { FURNACE_HABITS } from '@/lib/furnace-constants';
 
 export default function FurnaceDashboard() {
+    const [completedHabits, setCompletedHabits] = useState<string[]>([]);
+    const [streaks, setStreaks] = useState<Record<string, number>>({});
+
+    useEffect(() => {
+        const loadData = async () => {
+            const habits = await getTodayHabits();
+            const streakData = await getStreaks();
+            setCompletedHabits(habits);
+            setStreaks(streakData);
+        };
+        loadData();
+    }, []);
+
+    const completionPercentage = FURNACE_HABITS.length > 0
+        ? Math.round((completedHabits.length / FURNACE_HABITS.length) * 100)
+        : 0;
+
+    const totalStreak = Object.values(streaks).reduce((sum, val) => sum + val, 0);
+    const avgStreak = Object.keys(streaks).length > 0
+        ? Math.round(totalStreak / Object.keys(streaks).length)
+        : 0;
+
     return (
         <div className="min-h-screen p-4 md:p-8 space-y-12 pb-24">
             {/* Header */}
@@ -44,16 +71,55 @@ export default function FurnaceDashboard() {
             <BrainDump />
             <AICoach />
 
+            {/* Analytics Section */}
+            <section className="space-y-6">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                    <TrendingUp className="text-furnace-primary" size={24} />
+                    Analytics
+                </h2>
 
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Daily Completion */}
+                    <div className="bg-furnace-gray/30 rounded-2xl p-6 border border-white/5">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-sm font-medium text-white/60">Daily Completion</h3>
+                            <Target className="text-furnace-primary" size={20} />
+                        </div>
+                        <div className="text-3xl font-bold text-white mb-2">{completionPercentage}%</div>
+                        <div className="w-full bg-black/50 rounded-full h-2 overflow-hidden">
+                            <div
+                                className="bg-gradient-to-r from-furnace-primary to-furnace-accent h-full transition-all duration-500"
+                                style={{ width: `${completionPercentage}%` }}
+                            />
+                        </div>
+                        <p className="text-xs text-zinc-500 mt-2">
+                            {completedHabits.length} of {FURNACE_HABITS.length} habits completed
+                        </p>
+                    </div>
 
-            {/* Progress / Status (Placeholder) */}
-            <section className="bg-furnace-gray/30 rounded-3xl p-6 border border-white/5">
-                <div className="flex justify-between items-end mb-4">
-                    <h3 className="text-lg font-medium text-white/80">Daily Completion</h3>
-                    <span className="text-2xl font-bold text-white">0%</span>
-                </div>
-                <div className="w-full bg-black/50 rounded-full h-4 overflow-hidden">
-                    <div className="bg-gradient-to-r from-furnace-primary to-furnace-accent h-full w-0" style={{ width: '0%' }} />
+                    {/* Total Fire */}
+                    <div className="bg-furnace-gray/30 rounded-2xl p-6 border border-white/5">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-sm font-medium text-white/60">Total Streaks</h3>
+                            <Flame className="text-furnace-accent" size={20} />
+                        </div>
+                        <div className="text-3xl font-bold text-white mb-2">{totalStreak}</div>
+                        <p className="text-xs text-zinc-500 mt-2">
+                            Combined streak days
+                        </p>
+                    </div>
+
+                    {/* Average Streak */}
+                    <div className="bg-furnace-gray/30 rounded-2xl p-6 border border-white/5">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-sm font-medium text-white/60">Avg Streak</h3>
+                            <TrendingUp className="text-green-400" size={20} />
+                        </div>
+                        <div className="text-3xl font-bold text-white mb-2">{avgStreak}</div>
+                        <p className="text-xs text-zinc-500 mt-2">
+                            Days per habit
+                        </p>
+                    </div>
                 </div>
             </section>
         </div>

@@ -35,7 +35,7 @@ export async function chatWithGemini(
     mode: 'general' | 'vocab' | 'grammar' | 'confidence' | 'roleplay' = 'general'
 ) {
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         const systemInstruction = PROMPTS[mode] || PROMPTS.general;
 
