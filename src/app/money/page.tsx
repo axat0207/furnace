@@ -1,120 +1,93 @@
-import { getCategories, getTransactions } from './actions';
-import QuickAdd from '@/components/money/QuickAdd';
-import TransactionList from '@/components/money/TransactionList';
-import { getUser } from '@/lib/auth';
-import { redirect } from 'next/navigation';
-import Link from 'next/link';
-import { BarChart3, Users, TrendingUp, Sparkles, Wallet } from 'lucide-react';
-import Image from 'next/image';
+'use client';
 
-export default async function MoneyPage() {
-    const user = await getUser();
-    if (!user) redirect('/login');
+import { useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { FocusBoard } from '@/components/dashboard/FocusBoard';
+import { NonNegotiables } from '@/components/dashboard/NonNegotiables';
+import { ProgressRing } from '@/components/dashboard/ProgressRing';
+import { DetoxLogger } from '@/components/dashboard/DetoxLogger';
+import { LiveMetrics } from '@/components/dashboard/LiveMetrics';
+import { useApp } from '@/context/AppContext';
+import { calculateStats } from '@/lib/gamification';
+import { motion } from 'framer-motion';
 
-    const categories = await getCategories();
-    const transactions = await getTransactions(20);
+export default function Home() {
+  const router = useRouter();
+  
+  // Verify authentication on client side as well - redirect immediately if not authenticated
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const res = await fetch('/api/user', { 
+          credentials: 'include', // Ensure cookies are sent
+          cache: 'no-store' // Don't cache the auth check
+        });
+        if (!res.ok || res.status === 401) {
+          router.replace('/login');
+          return;
+        }
+      } catch (error) {
+        router.replace('/login');
+        return;
+      }
+    }
+    checkAuth();
+  }, [router]);
+  const { state } = useApp();
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const { levelInfo } = useMemo(() => calculateStats(state), [state]);
 
-    // Calculate quick stats
-    const thisMonth = transactions.filter(t => {
-        const date = new Date(t.date);
-        const now = new Date();
-        return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
-    });
+  const greetings = [
+    "Ready to ship, Developer?",
+    "Systems online.",
+    "Build the future.",
+    "Focus is the key.",
+    "Discipline equals freedom."
+  ];
 
-    const totalIncome = thisMonth.filter(t => t.type === 'INCOME').reduce((sum, t) => sum + t.amount, 0);
-    const totalExpense = thisMonth.filter(t => t.type === 'EXPENSE').reduce((sum, t) => sum + t.amount, 0);
-    const balance = totalIncome - totalExpense;
+  // Random greeting based on day
+  const greeting = greetings[new Date().getDate() % greetings.length];
 
-    return (
-        <div className="min-h-screen bg-transparent pb-20 md:pb-8 relative overflow-hidden">
-            {/* Animated Background Elements */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-0 left-1/4 w-96 h-96 bg-[var(--neon-purple)] rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-pulse" />
-                <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[var(--neon-blue)] rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-pulse delay-700" />
-                <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-[var(--neon-pink)] rounded-full mix-blend-multiply filter blur-[128px] opacity-10 animate-pulse delay-1000" />
-            </div>
-
-            <main className="max-w-6xl mx-auto px-3 md:px-4 space-y-4 md:space-y-8 relative z-10 pt-4 md:pt-8">
-                {/* Header - Compact on Mobile */}
-                <div className="flex items-center justify-between mb-2 md:mb-4">
-                    <div>
-                        <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2 neon-text">Money Manager</h1>
-                        <p className="text-xs md:text-sm text-[var(--text-secondary)] flex items-center gap-2">
-                            <Sparkles size={12} className="text-[var(--neon-gold)] md:w-4 md:h-4" />
-                            <span className="hidden sm:inline">Welcome back, </span>
-                            <span className="text-[var(--neon-purple)] font-semibold">{user.username}</span>
-                        </p>
-                    </div>
-                    <div className="flex gap-2 md:gap-3">
-                        <Link href="/money/splits" className="glass-card p-2 md:p-3 hover:scale-105 transition-transform" title="Shared Expenses">
-                            <Users size={20} className="md:w-6 md:h-6 text-[var(--neon-cyan)]" />
-                        </Link>
-                        <Link href="/money/analytics" className="glass-card p-2 md:p-3 hover:scale-105 transition-transform" title="Analytics">
-                            <BarChart3 size={20} className="md:w-6 md:h-6 text-[var(--neon-pink)]" />
-                        </Link>
-                    </div>
-                </div>
-
-                {/* Quick Add Section - FIRST PRIORITY */}
-                <section>
-                    <QuickAdd categories={categories} />
-                </section>
-
-                {/* Balance Cards - Compact on Mobile */}
-                <section className="grid grid-cols-3 gap-2 md:gap-6">
-                    <div className="glass-card p-3 md:p-6 relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <div className="relative z-10">
-                            <div className="flex items-center gap-1 md:gap-2 mb-1 md:mb-2">
-                                <TrendingUp size={12} className="md:w-4 md:h-4 text-green-500" />
-                                <p className="text-[10px] md:text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider hidden sm:block">Income</p>
-                            </div>
-                            <p className="text-lg md:text-3xl font-bold text-green-500">₹{totalIncome.toFixed(0)}</p>
-                            <p className="text-[10px] md:text-xs text-[var(--text-muted)] mt-0.5 md:mt-1 hidden md:block">This month</p>
-                        </div>
-                    </div>
-
-                    <div className="glass-card p-3 md:p-6 relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <div className="relative z-10">
-                            <div className="flex items-center gap-1 md:gap-2 mb-1 md:mb-2">
-                                <Wallet size={12} className="md:w-4 md:h-4 text-red-500" />
-                                <p className="text-[10px] md:text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider hidden sm:block">Expenses</p>
-                            </div>
-                            <p className="text-lg md:text-3xl font-bold text-red-500">₹{totalExpense.toFixed(0)}</p>
-                            <p className="text-[10px] md:text-xs text-[var(--text-muted)] mt-0.5 md:mt-1 hidden md:block">This month</p>
-                        </div>
-                    </div>
-
-                    <div className="glass-card p-3 md:p-6 relative overflow-hidden group animated-gradient">
-                        <div className="absolute inset-0 bg-black/40" />
-                        <div className="relative z-10">
-                            <div className="flex items-center gap-1 md:gap-2 mb-1 md:mb-2">
-                                <Sparkles size={12} className="md:w-4 md:h-4 text-white" />
-                                <p className="text-[10px] md:text-xs font-bold text-white uppercase tracking-wider hidden sm:block">Balance</p>
-                            </div>
-                            <p className={`text-lg md:text-3xl font-bold text-white`}>
-                                {balance >= 0 ? '+' : ''}₹{balance.toFixed(0)}
-                            </p>
-                            <p className="text-[10px] md:text-xs text-white/80 mt-0.5 md:mt-1 hidden md:block">Net this month</p>
-                        </div>
-                    </div>
-                </section>
-
-                {/* Recent Transactions */}
-                <section>
-                    <div className="flex items-center justify-between mb-3 md:mb-4">
-                        <h2 className="text-[var(--neon-cyan)] text-xs md:text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-                            <div className="w-1 h-3 md:h-4 bg-[var(--neon-cyan)] rounded-full" />
-                            Recent Activity
-                        </h2>
-                        <Link href="/money/analytics" className="text-[10px] md:text-xs text-[var(--neon-purple)] hover:text-[var(--neon-pink)] transition-colors font-semibold">
-                            View All →
-                        </Link>
-                    </div>
-                    <TransactionList transactions={transactions} />
-                </section>
-            </main>
+  return (
+    <div className="space-y-6 pb-20 md:pb-0">
+      {/* Header */}
+      <motion.div
+        className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div>
+          <h1 className="text-3xl md:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[var(--text-primary)] to-[var(--text-secondary)] neon-text">
+            Command Center
+          </h1>
+          <p className="text-[var(--text-secondary)] font-mono mt-2 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[var(--neon-green)] animate-pulse" />
+            {today}
+          </p>
         </div>
-    );
+
+        <div className="text-right hidden md:block">
+          <p className="text-sm font-bold text-[var(--neon-blue)]">{greeting}</p>
+          <p className="text-xs text-[var(--text-muted)] font-mono">Current Rank: {levelInfo.title}</p>
+        </div>
+      </motion.div>
+
+      {/* Grid Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* Left Column - Actionable (2/3 width) */}
+        <div className="lg:col-span-2 flex flex-col gap-6">
+          <FocusBoard />
+          <NonNegotiables />
+          <DetoxLogger />
+        </div>
+
+        {/* Right Column - Status (1/3 width) */}
+        <div className="flex flex-col gap-6">
+          <ProgressRing />
+          <LiveMetrics />
+        </div>
+      </div>
+    </div>
+  );
 }
