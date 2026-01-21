@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { HabitGrid } from "@/components/furnace/HabitGrid";
-import { BrainDump } from "@/components/furnace/BrainDump";
 import { AICoach } from "@/components/furnace/AICoach";
-import { Brain, MessageSquare, TrendingUp, Flame, Target } from "lucide-react";
+import { MessageSquare, TrendingUp, Flame, Target, Wallet } from "lucide-react";
 import Link from "next/link";
 import { getTodayHabits, getStreaks } from '@/app/furnace-actions';
 import { FURNACE_HABITS } from '@/lib/furnace-constants';
@@ -35,40 +34,51 @@ export default function FurnaceDashboard() {
     return (
         <div className="min-h-screen p-4 md:p-8 space-y-12 pb-24">
             {/* Header */}
-            <header className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-white mb-2">
+            <header className="flex items-center justify-between mb-4">
+                <div className="relative">
+                    <h1 className="text-4xl md:text-6xl font-orbitron font-black tracking-tight bg-gradient-to-r from-orange-500 via-red-500 to-orange-600 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(255,85,0,0.8)] animate-pulse relative inline-flex items-center gap-3">
+                        <Flame className="text-orange-500 fill-orange-500 drop-shadow-[0_0_20px_rgba(255,85,0,0.9)]" size={48} />
                         FURNACE
                     </h1>
-                    <p className="text-furnace-primary font-medium tracking-wide">
-                        DAY 1 OF 90
-                    </p>
                 </div>
 
-                {/* Quick Actions */}
-                <button className="p-3 rounded-full bg-furnace-gray border border-white/10 hover:border-furnace-main/50 transition-colors">
-                    <Brain className="text-furnace-accent" />
-                </button>
+
             </header>
 
             {/* Main Grid */}
             <section>
-                <div className="mb-8 p-1 rounded-2xl bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-pink-500/20 border border-indigo-500/30">
-                    <Link href="/communication" className="block p-6 rounded-xl bg-black/60 hover:bg-black/40 transition-all group relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <MessageSquare size={100} />
-                        </div>
-                        <h3 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
-                            Speech Dojo <span className="text-xs bg-indigo-500 text-white px-2 py-0.5 rounded font-bold uppercase tracking-wider">New</span>
-                        </h3>
-                        <p className="text-zinc-400 max-w-lg">Master vocabulary, grammar, and confidence with the AI Coach.</p>
-                    </Link>
+                {/* Featured Modules Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 relative z-10">
+                    {/* Speech Dojo */}
+                    <div className="p-1 rounded-2xl bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-pink-500/20 border border-indigo-500/30">
+                        <Link href="/communication" className="block p-6 rounded-xl bg-black/60 hover:bg-black/40 transition-all group relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <MessageSquare size={100} />
+                            </div>
+                            <h3 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
+                                Speech Dojo <span className="text-xs bg-indigo-500 text-white px-2 py-0.5 rounded font-bold uppercase tracking-wider">Enhanced</span>
+                            </h3>
+                            <p className="text-zinc-400 max-w-lg">Practice conversations in Professional, Casual modes. Discuss Politics, Tech, CS, Fitness, or create custom topics.</p>
+                        </Link>
+                    </div>
+
+                    {/* Money Management */}
+                    <div className="p-1 rounded-2xl bg-gradient-to-r from-emerald-500/20 via-green-500/20 to-teal-500/20 border border-emerald-500/30">
+                        <Link href="/money" className="block p-6 rounded-xl bg-black/60 hover:bg-black/40 transition-all group relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <Wallet size={100} />
+                            </div>
+                            <h3 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
+                                Money Manager
+                            </h3>
+                            <p className="text-zinc-400 max-w-lg">Track expenses, manage splits, and gain insights into your financial habits.</p>
+                        </Link>
+                    </div>
                 </div>
 
                 <HabitGrid />
             </section>
 
-            <BrainDump />
             <AICoach />
 
             {/* Analytics Section */}
